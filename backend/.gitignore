@@ -1,0 +1,9 @@
+# Node modules
+node_modules/
+
+# Окружение
+.env
+
+dist/
+build/
+.DS_Store
