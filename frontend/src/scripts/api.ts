@@ -6,24 +6,4 @@ const api = axios.create({
   timeout: 2500,
 });
 
-export default {
-  getUserRole: async () => {
-    const response = await api.get("/auth/role");
-    return response.data;
-  },
-
-  doctorData: async () => {
-    const response = await api.get("/doctor/get");
-    return response.data;
-  },
-
-  getPatients: async () => {
-    const response = await api.get("/doctor/patients");
-    return response.data;
-  },
-
-  patientData: async () => {
-    const response = await api.get("/patient/get");
-    return response.data;
-  },
-};
+export default api;
