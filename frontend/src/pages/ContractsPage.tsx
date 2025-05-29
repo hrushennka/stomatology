@@ -4,6 +4,7 @@ import { Colors } from "../constants/Colors";
 import api from "../scripts/api";
 import { FaTrash, FaEdit, FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+
 interface PrivateContract {
   id: number;
   number: string;
@@ -19,22 +20,9 @@ interface OrganizationContract {
   organizationName: string;
   type: "organization";
 }
-interface PrivateContract {
-  id: number;
-  number: string;
-  clientName: string;
-  type: "private";
-}
-interface OrganizationContract {
-  id: number;
-  number: string;
-  startDate: string;
-  endDate: string;
-  amount: string;
-  organizationName: string;
-  type: "organization";
-}
+
 type Contract = PrivateContract | OrganizationContract;
+
 const ContractsPage: React.FC = () => {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
