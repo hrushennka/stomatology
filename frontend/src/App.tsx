@@ -1,11 +1,27 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import styled, { createGlobalStyle } from "styled-components";
+import { createGlobalStyle, styled } from "styled-components";
+import {
+  Container,
+  Button,
+  Typography,
+  Box,
+  List,
+  ListItem,
+} from "@mui/material";
 import { Colors } from "./constants/Colors";
 import ProvidedServicePage from "./pages/ProvidedServicePage";
 import AppointmentsPage from "./pages/AppointmentsPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import ContractsPage from "./pages/ContractsPage";
+
+const GlobalStyle = createGlobalStyle`
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif; 
+    background-color: rgba(247, 248, 252, 0.49);
+  }
+`;
 
 const App = () => {
   return (
@@ -22,92 +38,61 @@ const App = () => {
   );
 };
 
-const GlobalStyle = createGlobalStyle`
-  body {
-    margin: 0;
-    font-family: Arial, sans-serif; 
-    background-color:rgba(247, 248, 252, 0.49);
-  }
-`;
-
 const MainPage = () => {
   return (
-    <Container>
-      <Title>Главная страница</Title>
-      <ListWindow>
-        <ListStyled>
-          <LinkStyled to="/services">Список оказанных услуг</LinkStyled>
-          <LinkStyled to="/appointments">Список записей</LinkStyled>
-          <LinkStyled to="/payments">Список оплат</LinkStyled>
-          <LinkStyled to="/contracts">Список договоров</LinkStyled>
-        </ListStyled>
-        <LinkExitStyled to="/login">Выйти из системы</LinkExitStyled>
-      </ListWindow>
+    <Container maxWidth="sm" sx={{ textAlign: "center", marginTop: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Главная страница
+      </Typography>
+
+      <Box
+        sx={{
+          border: "1px solid rgba(189, 189, 189, 0.5)",
+          borderRadius: 2,
+          padding: 3,
+          backgroundColor: "white",
+          boxShadow: 1,
+        }}
+      >
+        <List sx={{ padding: 0 }}>
+          <ListItem>
+            <LinkStyled to="/services">Список оказанных услуг</LinkStyled>
+          </ListItem>
+          <ListItem>
+            <LinkStyled to="/appointments">Список записей</LinkStyled>
+          </ListItem>
+          <ListItem>
+            <LinkStyled to="/payments">Список оплат</LinkStyled>
+          </ListItem>
+          <ListItem>
+            <LinkStyled to="/contracts">Список договоров</LinkStyled>
+          </ListItem>
+        </List>
+
+        <Box mt={2}>
+          <Link to="/login" style={{ textDecoration: "none" }}>
+            <Button variant="contained">Выйти из системы</Button>
+          </Link>
+        </Box>
+      </Box>
     </Container>
   );
 };
-
-const ListWindow = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: solid rgb(189, 189, 189) 1px;
-  border-radius: 10px;
-  overflow: hidden;
-  background-color: ${Colors.main};
-  padding-bottom: 30px;
-`;
-const ListStyled = styled.li`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: ${Colors.main};
-  padding: 30px;
-`;
-
-const LinkExitStyled = styled.div`
-  background-color: ${Colors.button};
-  padding: 10px;
-  border-radius: 20px;
-  width: 200px;
-  text-align: center;
-  &:hover {
-    background-color: ${Colors.buttonHover};
-  }
-  color: rgb(255, 255, 255);
-`;
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: calc(100vh - 60px);
-  padding: 20px;
-`;
-
-const Title = styled.h1`
-  margin-bottom: 20px;
-  color: rgb(76, 72, 82);
-`;
 
 const LinkStyled = styled(Link)`
   display: block;
   text-align: center;
   margin: 10px 0;
   text-decoration: none;
-  color: rgb(76, 72, 82);
-  border-bottom: 1px solid #ccc;
-  width: 200px;
+  color: rgba(88, 93, 100, 0.93);
+  border-bottom: 1px solid rgba(189, 189, 189, 0.5);
+  width: 100%;
   padding: 10px;
   border-radius: 5px;
   transition: background-color 0.3s;
-
   &:hover {
-    background-color: ${Colors.buttonListHover};
+    color: #1976d2;
+    background-color: rgba(33, 150, 243, 0.1);
   }
 `;
-
 export default App;

@@ -4,10 +4,70 @@ import {
   PatientModel,
   OrganizationModel,
 } from "../config/models.js";
+import sequelize from "../config/db.js";
+import { Op } from "sequelize";
 
-const getContracts = async (req, res) => {
+const deletePrivateContract = async (req, res) => {
+  const { id } = req.params;
   try {
+    const result = await ContractModel.destroy({
+      where: { contractid: id },
+    });
+    if (result === 0) {
+      return res.status(404).json({ error: "Контракт не найден" });
+    }
+    res.status(200).json({ message: "Контракт успешно удален" });
+  } catch (error) {
+    console.error("Ошибка удаления частного контракта:", error);
+    res.status(500).json({ error: "Не удалось удалить частный контракт" });
+  }
+};
+const deleteOrgContract = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await OrgContractModel.destroy({
+      where: { orgcontractid: id },
+    });
+    if (result === 0) {
+      return res.status(404).json({ error: "Контракт не найден" });
+    }
+    res.status(200).json({ message: "Контракт успешно удален" });
+  } catch (error) {
+    console.error("Ошибка удаления организационного контракта:", error);
+    res
+      .status(500)
+      .json({ error: "Не удалось удалить организационный контракт" });
+  }
+};
+
+const getPrivateContracts = async (req, res) => {
+  const limit = parseInt(req.query.limit) || 3;
+  const offset = parseInt(req.query.offset) || 0;
+  const search = req.query.search || "";
+  try {
+    const whereClient = {
+      [Op.or]: [
+        {
+          "$tblpatient.patientfirstname$": {
+            [Op.iLike]: `%${search}%`,
+          },
+        },
+        {
+          "$tblpatient.patientlastname$": {
+            [Op.iLike]: `%${search}%`,
+          },
+        },
+        {
+          "$tblpatient.patientpatronymic$": {
+            [Op.iLike]: `%${search}%`,
+          },
+        },
+      ],
+    };
     const privateContracts = await ContractModel.findAll({
+      limit,
+      offset,
+      where: whereClient,
       include: [
         {
           model: PatientModel,
@@ -19,10 +79,34 @@ const getContracts = async (req, res) => {
           ],
         },
       ],
-      attributes: ["contractid", "contractnumber"],
+      attributes: ["contractid", "contractnumber", "contractstatus"],
     });
-
+    const formattedContracts = formatPrivateContracts(privateContracts);
+    res.json(formattedContracts);
+  } catch (error) {
+    console.error("Ошибка получения частных контрактов:", error);
+    res.status(500).json({ error: "Не удалось получить частные контракты" });
+  }
+};
+const getOrgContracts = async (req, res) => {
+  const limit = parseInt(req.query.limit) || 3;
+  const offset = parseInt(req.query.offset) || 0;
+  const search = req.query.search || "";
+  try {
+    await sequelize.query("SELECT update_org_contract_status();");
+    const whereOrganization = {
+      [Op.or]: [
+        {
+          "$tblorganization.organizationname$": {
+            [Op.iLike]: `%${search}%`,
+          },
+        },
+      ],
+    };
     const orgContracts = await OrgContractModel.findAll({
+      limit,
+      offset,
+      where: whereOrganization,
       include: [
         {
           model: OrganizationModel,
@@ -36,18 +120,16 @@ const getContracts = async (req, res) => {
         "orgcontractstartdate",
         "orgcontractenddate",
         "orgcontractamount",
+        "orgcontractstatus",
       ],
     });
-
-    const contracts = [
-      ...formatPrivateContracts(privateContracts),
-      ...formatOrgContracts(orgContracts),
-    ];
-
-    res.json(contracts);
+    const formattedContracts = formatOrgContracts(orgContracts);
+    res.json(formattedContracts);
   } catch (error) {
-    console.error("Ошибка получения договоров:", error);
-    res.status(500).json({ error: "Не удалось получить договоры" });
+    console.error("Ошибка получения организационных контрактов:", error);
+    res
+      .status(500)
+      .json({ error: "Не удалось получить организационные контракты" });
   }
 };
 const formatPrivateContracts = (privateContracts) => {
@@ -56,6 +138,7 @@ const formatPrivateContracts = (privateContracts) => {
     return {
       id: contract.contractid,
       number: contract.contractnumber,
+      status: contract.contractstatus,
       clientName: `${patient.patientfirstname || ""} ${
         patient.patientlastname || ""
       } ${patient.patientpatronymic || ""}`.trim(),
@@ -72,10 +155,15 @@ const formatOrgContracts = (orgContracts) => {
       startDate: orgContract.orgcontractstartdate,
       endDate: orgContract.orgcontractenddate,
       amount: orgContract.orgcontractamount,
+      status: orgContract.orgcontractstatus,
       organizationName: organization.organizationname || "",
       type: "organization",
     };
   });
 };
-
-export { getContracts };
+export {
+  getPrivateContracts,
+  getOrgContracts,
+  deletePrivateContract,
+  deleteOrgContract,
+};

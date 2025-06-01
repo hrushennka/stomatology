@@ -23,6 +23,10 @@ const OrgContract = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
+      orgcontractstatus: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+      },
       organizationid: {
         type: DataTypes.INTEGER,
         allowNull: false,
