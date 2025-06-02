@@ -8,7 +8,7 @@ import {
   PaymentModel as tblpayment 
 } from "../config/models.js";
 
-import { Op } from 'sequelize';
+// import { Op } from 'sequelize';
 
 const getPaymentsList = async (req, res) => {
   try {
@@ -25,8 +25,8 @@ const getPaymentsList = async (req, res) => {
         },
         {
           model: tblpayment,
-          as: 'payments', // Добавляем связь с платежами
-          required: false, // Не обязательная связь
+          as: 'payments', 
+          required: false, 
         },
       ],
     });
@@ -48,14 +48,14 @@ const getPaymentsList = async (req, res) => {
         const totalAmount = visit.tblprovidedservices.reduce(
           (sum, ps) => {
             if (ps.tblservice) {
-              return sum + parseFloat(ps.tblservice.servicecost); // Обратите внимание на servicecost в нижнем регистре
+              return sum + parseFloat(ps.tblservice.servicecost); 
             }
             return sum;
           }, 0
         );
 
         const employee = await tblemployee.findOne({
-          where: { patientid: patient.patientid } // Используем patientid в нижнем регистре
+          where: { patientid: patient.patientid } 
         });
 
         const contractType = employee ? 'организация' : 'частный';
@@ -63,7 +63,7 @@ const getPaymentsList = async (req, res) => {
         let orgContract = null;
         if (employee) {
           orgContract = await tblorgcontract.findOne({
-            where: { organizationid: employee.organizationid } // И здесь в нижнем регистре
+            where: { organizationid: employee.organizationid } 
           });
         }
         
@@ -77,10 +77,10 @@ const getPaymentsList = async (req, res) => {
           VisitTime: visit.visittime,
           TotalAmount: totalAmount.toFixed(2),
           ContractType: contractType,
-          OrgContractAmount: orgContract ? parseFloat(orgContract.orgcontractamount) : null, // и здесь
-          OrgContractID: orgContract ? orgContract.orgcontractid : null, // и здесь
-          OrganizationID: employee ? employee.organizationid : null, // и здесь
-          IsPaid: isPaid, // Добавляем статус оплаты
+          OrgContractAmount: orgContract ? parseFloat(orgContract.orgcontractamount) : null, 
+          OrgContractID: orgContract ? orgContract.orgcontractid : null, 
+          OrganizationID: employee ? employee.organizationid : null, 
+          IsPaid: isPaid, // статус оплаты
           tblprovidedservices: visit.tblprovidedservices
         };
       })
