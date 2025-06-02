@@ -1,5 +1,25 @@
 import React, { useState, useEffect } from "react";
-import styled from "styled-components";
+import {
+  Box,
+  Button,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  CircularProgress,
+  Chip,
+  Collapse,
+  IconButton,
+  Alert,
+  Snackbar,
+  Paper,
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { Colors } from "../constants/Colors";
+import { FaArrowLeft, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import api from "../scripts/api";
 
 interface ProvidedService {
@@ -44,17 +64,23 @@ const PaymentsPage: React.FC = () => {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<"success" | "error">("success");
   const [processingPayment, setProcessingPayment] = useState<number | null>(null);
   const [expandedVisitId, setExpandedVisitId] = useState<number | null>(null);
+  const [offset, setOffset] = useState(0);
+  const [limit] = useState(10);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchVisits();
-  }, []);
+  }, [offset]);
 
   const fetchVisits = async () => {
     try {
       setLoading(true);
-      const response = await api.get<Visit[]>("/payment/list");
+      const response = await api.get<Visit[]>("/payment/list", {
+        params: { limit, offset }
+      });
       
       const visitsWithServices = response.data.map(visit => ({
         ...visit,
@@ -64,11 +90,11 @@ const PaymentsPage: React.FC = () => {
         }))
       }));
       
-      setVisits(visitsWithServices);
-      setMessage(null);
+      setVisits(prev => offset === 0 ? visitsWithServices : [...prev, ...visitsWithServices]);
     } catch (error: any) {
       console.error("Error fetching visits:", error);
       setMessage(error.response?.data?.error || "Ошибка при загрузке данных");
+      setMessageType("error");
     } finally {
       setLoading(false);
     }
@@ -79,6 +105,7 @@ const PaymentsPage: React.FC = () => {
     try {
       const response = await api.post<ApiResponse>(`/payment/pay/${visitId}`);
       setMessage(response.data.message);
+      setMessageType("success");
       
       setVisits(prevVisits => 
         prevVisits.map(visit => 
@@ -86,10 +113,14 @@ const PaymentsPage: React.FC = () => {
         )
       );
       
-      setTimeout(fetchVisits, 1000);
+      setTimeout(() => {
+        setOffset(0);
+        fetchVisits();
+      }, 1000);
     } catch (error: any) {
       console.error("Error paying visit:", error);
       setMessage(error.response?.data?.error || "Ошибка при оплате");
+      setMessageType("error");
     } finally {
       setProcessingPayment(null);
     }
@@ -99,315 +130,168 @@ const PaymentsPage: React.FC = () => {
     setExpandedVisitId(expandedVisitId === visitId ? null : visitId);
   };
 
-  if (loading) {
-    return <Container>Загрузка данных...</Container>;
+  const handleBackButtonClick = () => {
+    navigate(-1);
+  };
+
+
+  if (loading && visits.length === 0) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <Container>
-      <Title>Список визитов для оплаты</Title>
-      
-      {message && (
-        <MessageBox type={message.includes("успеш") ? "success" : "error"}>
+    <Box sx={{ padding: 2 }}>
+      <Box display="flex" justifyContent="space-between" mb={2}>
+        <Typography variant="h4">Список визитов для оплаты</Typography>
+        <Button variant="contained" onClick={handleBackButtonClick}>
+          <FaArrowLeft style={{ marginRight: 8 }} /> Назад
+        </Button>
+      </Box>
+
+      <Snackbar
+        open={!!message}
+        autoHideDuration={6000}
+        onClose={() => setMessage(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setMessage(null)} severity={messageType} sx={{ width: '100%' }}>
           {message}
-          <CloseButton onClick={() => setMessage(null)}>×</CloseButton>
-        </MessageBox>
-      )}
+        </Alert>
+      </Snackbar>
 
-      <VisitsList>
-        {visits.length === 0 ? (
-          <EmptyMessage>Нет визитов для отображения</EmptyMessage>
-        ) : (
-          visits.map((visit) => (
-            <VisitCard key={visit.VisitID}>
-              <VisitHeader onClick={() => toggleVisitDetails(visit.VisitID)}>
-                <PatientName>{visit.PatientName}</PatientName>
-                <VisitInfo>
-                  <VisitDateTime>
-                    {new Date(visit.VisitDate).toLocaleDateString()} {visit.VisitTime}
-                  </VisitDateTime>
-                  {visit.IsPaid && <PaidBadge>Оплачено</PaidBadge>}
-                  <ExpandIcon>
-                    {expandedVisitId === visit.VisitID ? '▲' : '▼'}
-                  </ExpandIcon>
-                </VisitInfo>
-              </VisitHeader>
-
-              {expandedVisitId === visit.VisitID && (
-                <ServicesList>
-                  <ServicesTitle>Оказанные услуги:</ServicesTitle>
-                  {visit.Services?.map((service, index) => (
-                    <ServiceItem key={index}>
-                      <ServiceName>{service.servicename}</ServiceName>
-                      <ServicePrice>{service.servicecost.toFixed(2)} руб.</ServicePrice>
-                    </ServiceItem>
-                  ))}
-                  <TotalRow>
-                    <TotalLabel>Итого:</TotalLabel>
-                    <TotalAmount>{visit.TotalAmount} руб.</TotalAmount>
-                  </TotalRow>
-                </ServicesList>
-              )}
-
-              <VisitDetails>
-                <DetailRow>
-                  <DetailLabel>Сумма:</DetailLabel>
-                  <DetailValue>{visit.TotalAmount} руб.</DetailValue>
-                </DetailRow>
-                <DetailRow>
-                  <DetailLabel>Тип договора:</DetailLabel>
-                  <DetailValue>{visit.ContractType}</DetailValue>
-                </DetailRow>
-                {visit.ContractType === 'организация' && visit.OrgContractAmount !== null && (
-                  <DetailRow>
-                    <DetailLabel>Сумма по договору:</DetailLabel>
-                    <DetailValue>{visit.OrgContractAmount} руб.</DetailValue>
-                  </DetailRow>
-                )}
-              </VisitDetails>
-
-              <PayButton 
-                onClick={() => handlePayVisit(visit.VisitID)}
-                disabled={visit.IsPaid || processingPayment === visit.VisitID}
-                isPaid={visit.IsPaid}
-                isLoading={processingPayment === visit.VisitID}
-              >
-                {processingPayment === visit.VisitID ? (
-                  <LoadingText>Обработка...</LoadingText>
-                ) : visit.IsPaid ? (
-                  "Оплачено"
-                ) : (
-                  "Оплатить"
-                )}
-              </PayButton>
-            </VisitCard>
-          ))
-        )}
-      </VisitsList>
-    </Container>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead sx={{ backgroundColor: Colors.tableHeader }}>
+            <TableRow>
+              <TableCell sx={headerCellStyles}>Пациент</TableCell>
+              <TableCell sx={headerCellStyles}>Дата и время</TableCell>
+              <TableCell sx={headerCellStyles}>Тип договора</TableCell>
+              <TableCell sx={headerCellStyles}>Сумма</TableCell>
+              <TableCell sx={headerCellStyles}>Действия</TableCell>
+              <TableCell sx={headerCellStyles} width={50}></TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {visits.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  <Typography variant="body1" color="textSecondary" sx={{ py: 4 }}>
+                    Нет визитов для отображения
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              visits.map((visit) => (
+                <React.Fragment key={visit.VisitID}>
+                  <TableRow
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: Colors.tableRowHover,
+                      },
+                      borderLeft: visit.IsPaid ? "4px solid #4caf50" : "4px solid rgb(240, 70, 47)",
+                    }}
+                  >
+                    <TableCell>{visit.PatientName}</TableCell>
+                    <TableCell>
+                      {new Date(visit.VisitDate).toLocaleDateString()} {visit.VisitTime}
+                    </TableCell>
+                    <TableCell>{visit.ContractType}</TableCell>
+                    <TableCell>
+                      <Typography fontWeight={600} color={visit.IsPaid ? "success.main" : "text.primary"}>
+                        {visit.TotalAmount} ₽
+                      </Typography>
+                    </TableCell>
+                    {/* <TableCell>
+                      <Chip
+                        label={visit.IsPaid ? "Оплачено" : "Не оплачено"}
+                        color={visit.IsPaid ? "success" : "warning"}
+                        size="small"
+                      />
+                    </TableCell> */}
+                    <TableCell>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        onClick={() => handlePayVisit(visit.VisitID)}
+                        disabled={visit.IsPaid || processingPayment === visit.VisitID}
+                        sx={{ minWidth: 100 }}
+                      >
+                        {processingPayment === visit.VisitID ? (
+                          <CircularProgress size={20} color="inherit" />
+                        ) : visit.IsPaid ? (
+                          "Оплачено"
+                        ) : (
+                          "Оплатить"
+                        )}
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => toggleVisitDetails(visit.VisitID)}
+                      >
+                        {expandedVisitId === visit.VisitID ? <FaChevronUp /> : <FaChevronDown />}
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={7} sx={{ paddingBottom: 0, paddingTop: 0 }}>
+                      <Collapse in={expandedVisitId === visit.VisitID} timeout="auto" unmountOnExit>
+                        <Box sx={{ margin: 2 }}>
+                          <Typography variant="h6" gutterBottom component="div">
+                            Оказанные услуги
+                          </Typography>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Услуга</TableCell>
+                                <TableCell align="right">Стоимость</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {visit.Services?.map((service, index) => (
+                                <TableRow key={index}>
+                                  <TableCell>{service.servicename}</TableCell>
+                                  <TableCell align="right">{service.servicecost.toFixed(2)} ₽</TableCell>
+                                </TableRow>
+                              ))}
+                              <TableRow>
+                                <TableCell colSpan={1} sx={{ fontWeight: 600 }}>
+                                  Итого:
+                                </TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: "success.main" }}>
+                                  {visit.TotalAmount} ₽
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                          {visit.ContractType === 'организация' && visit.OrgContractAmount !== null && (
+                            <Typography variant="body2" sx={{ mt: 2 }}>
+                              Сумма по договору организации: <strong>{visit.OrgContractAmount} ₽</strong>
+                            </Typography>
+                          )}
+                        </Box>
+                      </Collapse>
+                    </TableCell>
+                  </TableRow>
+                </React.Fragment>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
   );
 };
 
-// Добавляем новые стили для деталей услуг
-const ServicesList = styled.div`
-  margin: 12px 0;
-  padding: 12px;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-`;
-
-const ServicesTitle = styled.h3`
-  font-size: 1rem;
-  color: #555;
-  margin-bottom: 8px;
-`;
-
-const ServiceItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid #eee;
-`;
-
-const ServiceName = styled.span`
-  color: #333;
-`;
-
-const ServicePrice = styled.span`
-  font-weight: 500;
-  color: #333;
-`;
-
-const TotalRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid #ddd;
-  font-weight: 600;
-`;
-
-const TotalLabel = styled.span`
-  color: #333;
-`;
-
-const TotalAmount = styled.span`
-  color: #2e7d32;
-`;
-
-const ExpandIcon = styled.span`
-  margin-left: 8px;
-  font-size: 0.9rem;
-`;
-
-// Остальные стили остаются без изменений
-const Container = styled.div`
-  padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-`;
-
-const Title = styled.h1`
-  font-size: 1.8rem;
-  color: #333;
-  margin-bottom: 24px;
-  text-align: center;
-`;
-
-const VisitsList = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-  margin-top: 20px;
-`;
-
-const VisitCard = styled.div`
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-  &:hover {
-    transform: translateY(-2px);
-  }
-`;
-
-const VisitHeader = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-`;
-
-const PatientName = styled.div`
-  font-weight: 600;
-  font-size: 1.2rem;
-  color: #333;
-  margin-bottom: 8px;
-`;
-
-const VisitInfo = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const VisitDateTime = styled.div`
-  color: #666;
-  font-size: 0.9rem;
-`;
-
-const PaidBadge = styled.span`
-  background-color: #4caf50;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-`;
-
-const VisitDetails = styled.div`
-  margin-bottom: 20px;
-`;
-
-const DetailRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
-`;
-
-const DetailLabel = styled.span`
-  font-weight: 500;
-  color: #555;
-`;
-
-const DetailValue = styled.span`
-  color: #333;
-`;
-
-const PayButton = styled.button<{ isPaid: boolean; isLoading: boolean }>`
-  background: ${({ isPaid, isLoading }) => 
-    isPaid ? '#e0e0e0' : isLoading ? '#81c784' : '#4caf50'};
-  color: white;
-  border: none;
-  padding: 12px;
-  border-radius: 6px;
-  cursor: ${({ isPaid }) => isPaid ? 'not-allowed' : 'pointer'};
-  width: 100%;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
-
-  &:hover {
-    background: ${({ isPaid, isLoading }) => 
-      isPaid ? '#e0e0e0' : isLoading ? '#81c784' : '#3e8e41'};
-    transform: ${({ isPaid }) => isPaid ? 'none' : 'translateY(-1px)'};
-  }
-
-  &:active {
-    transform: ${({ isPaid }) => isPaid ? 'none' : 'translateY(0)'};
-  }
-`;
-
-const LoadingText = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  &::after {
-    content: "";
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 1s ease-in-out infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-`;
-
-const MessageBox = styled.div<{ type: 'success' | 'error' }>`
-  position: relative;
-  padding: 16px;
-  margin-bottom: 24px;
-  border-radius: 6px;
-  background: ${({ type }) => type === 'success' ? '#e8f5e9' : '#ffebee'};
-  color: ${({ type }) => type === 'success' ? '#2e7d32' : '#c62828'};
-  border: 1px solid ${({ type }) => type === 'success' ? '#c8e6c9' : '#ffcdd2'};
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  color: inherit;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-
-  &:hover {
-    opacity: 1;
-  }
-`;
-
-const EmptyMessage = styled.div`
-  text-align: center;
-  padding: 40px;
-  color: #666;
-  font-size: 1.1rem;
-  grid-column: 1 / -1;
-`;
+const headerCellStyles = {
+  fontWeight: 700,
+  color: "white",
+};
 
 export default PaymentsPage;
