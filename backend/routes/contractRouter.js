@@ -7,5 +7,6 @@ router.get("/private", contractController.getPrivateContracts);
 router.get("/organization", contractController.getOrgContracts);
 router.delete("/private/:id", contractController.deletePrivateContract);
 router.delete("/organization/:id", contractController.deleteOrgContract);
+router.put("/:id", contractController.updateContract);
 
 export default router;
