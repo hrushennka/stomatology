@@ -29,7 +29,7 @@ const App = () => {
       <GlobalStyle />
       <Routes>
         <Route path="/" element={<MainPage />} />
-        <Route path="/services" element={<ProvidedServicePage />} />
+        <Route path="/services/:visitId" element={<ProvidedServicePage />} />
         <Route path="/appointments" element={<AppointmentsPage />} />
         <Route path="/payments" element={<PaymentsPage />} />
         <Route path="/contracts" element={<ContractsPage />} />
@@ -56,7 +56,7 @@ const MainPage = () => {
       >
         <List sx={{ padding: 0 }}>
           <ListItem>
-            <LinkStyled to="/services">Список оказанных услуг</LinkStyled>
+            <LinkStyled to="/services/1/">Список оказанных услуг</LinkStyled>
           </ListItem>
           <ListItem>
             <LinkStyled to="/appointments">Список записей</LinkStyled>
