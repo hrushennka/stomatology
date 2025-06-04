@@ -42,7 +42,7 @@ const deleteOrgContract = async (req, res) => {
 
 const getPrivateContracts = async (req, res) => {
   const limit = parseInt(req.query.limit) || 3;
-  const offset = parseInt(req.query.offset) || 0;
+  const page = parseInt(req.query.page) || 1;
   const search = req.query.search || "";
   const totalCount = await ContractModel.count();
 
@@ -66,6 +66,9 @@ const getPrivateContracts = async (req, res) => {
         },
       ],
     };
+
+    const offset = (page - 1) * limit;
+
     const privateContracts = await ContractModel.findAll({
       limit,
       offset,
@@ -92,7 +95,7 @@ const getPrivateContracts = async (req, res) => {
 };
 const getOrgContracts = async (req, res) => {
   const limit = parseInt(req.query.limit) || 3;
-  const offset = parseInt(req.query.offset) || 0;
+  const page = parseInt(req.query.page) || 0;
   const search = req.query.search || "";
   const totalCount = await OrgContractModel.count();
 
@@ -107,6 +110,9 @@ const getOrgContracts = async (req, res) => {
         },
       ],
     };
+
+    const offset = (page - 1) * limit;
+
     const orgContracts = await OrgContractModel.findAll({
       limit,
       offset,
@@ -169,7 +175,6 @@ const updateContract = async (req, res) => {
   const id = parseInt(req.params.id, 10);
 
   const { type, number, startDate, endDate, amount, status } = req.body;
-  console.log("aaaaaaaaaaa", number, status);
   try {
     let updated;
     if (!type) {

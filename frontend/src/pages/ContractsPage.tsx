@@ -11,6 +11,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Pagination,
   CircularProgress,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -48,8 +49,8 @@ const ContractsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"organization" | "private">(
     "organization"
   );
-  const [offset, setOffset] = useState(0);
-  const [limit] = useState(10);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(3);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const [showSearch, setShowSearch] = useState(false);
@@ -59,23 +60,19 @@ const ContractsPage: React.FC = () => {
 
   const fetchContracts = async (
     type: "organization" | "private",
-    newOffset = 0
+    pageNumber = 1
   ) => {
     try {
       setLoading(true);
       const response = await api.get(`/contract/${type}`, {
         params: {
           limit,
-          offset: newOffset,
+          page: pageNumber,
           search: searchTerm,
         },
       });
 
-      setContracts((prev) =>
-        newOffset === 0
-          ? response.data.contracts
-          : [...prev, ...response.data.contracts]
-      );
+      setContracts(response.data.contracts);
       setTotalCount(response.data.totalCount);
     } catch (error) {
       console.error("Ошибка при получении контрактов:", error);
@@ -107,8 +104,8 @@ const ContractsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchContracts(activeTab, offset);
-  }, [activeTab, offset]);
+    fetchContracts(activeTab, page);
+  }, [activeTab, page]);
 
   if (loading) {
     return <CircularProgress />;
@@ -128,15 +125,10 @@ const ContractsPage: React.FC = () => {
     navigate(-1);
   };
 
-  const loadMoreContracts = () => {
-    setOffset((prev) => prev + limit);
-    console.log(offset, totalCount);
-  };
-
   const handleSearch = () => {
     setSearchTerm("");
-    setOffset(0);
-    fetchContracts(activeTab, 0);
+    setPage(1);
+    fetchContracts(activeTab, 1);
   };
 
   const handleKeyDown = (event: any) => {
@@ -176,8 +168,8 @@ const ContractsPage: React.FC = () => {
         value={activeTab}
         onChange={(_e, newValue) => {
           setActiveTab(newValue);
-          setOffset(0);
-          fetchContracts(newValue, 0);
+          setPage(1);
+          fetchContracts(newValue, 1);
         }}
         sx={{ mb: 2 }}
       >
@@ -185,7 +177,13 @@ const ContractsPage: React.FC = () => {
         <Tab label={`Частные клиенты`} value="private" />
       </Tabs>
 
-      <TableContainer>
+      <TableContainer
+        sx={{
+          backgroundColor: "#fff",
+          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
+          borderRadius: "2px",
+        }}
+      >
         <Table>
           <TableHead
             sx={{
@@ -196,7 +194,6 @@ const ContractsPage: React.FC = () => {
               <TableCell sx={headerCellStyles}>Номер договора</TableCell>
               <TableCell sx={headerCellStyles}>
                 <Box display="flex" alignItems="center">
-                  {" "}
                   <Typography variant="body2" sx={headerCellStyles}>
                     ФИО/Организация
                   </Typography>
@@ -218,81 +215,112 @@ const ContractsPage: React.FC = () => {
               <TableCell sx={headerCellStyles}>Действия</TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
-            {contracts.map((contract) => {
-              const expired =
-                contract.type === "organization" && isExpired(contract.endDate);
-              const hasZeroBalance =
-                contract.type === "organization" &&
-                Number(contract.amount) === 0;
-              return (
-                <TableRow
-                  key={contract.id}
-                  sx={{
-                    "&:hover": {
-                      backgroundColor: Colors.tableRowHover,
-                    },
-                    borderLeft: expired
-                      ? "4px solid rgb(240, 70, 47)"
-                      : hasZeroBalance
-                      ? "4px solid rgb(240, 70, 47)"
-                      : "none",
-                  }}
-                >
-                  <TableCell>{contract.number}</TableCell>
-                  <TableCell>{contract.clientName}</TableCell>
-                  <TableCell>
-                    {contract.status ? "Активен" : "Не активен"}
-                  </TableCell>
-
-                  {contract.type === "organization" && (
-                    <>
-                      <TableCell>
-                        <Box display="flex" alignItems="center">
-                          {expired && <FaCircle style={circleStyles} />}
-                          {contract.endDate}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box display="flex" alignItems="center">
-                          {hasZeroBalance && <FaCircle style={circleStyles} />}
-                          {`${contract.amount} ₽`}
-                        </Box>
-                      </TableCell>
-                    </>
-                  )}
-
-                  <TableCell>
+            {contracts.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                    p={1}
+                  >
+                    <Typography variant="body1" gutterBottom>
+                      Ничего не найдено
+                    </Typography>
                     <Button
-                      sx={{ mr: 2 }}
+                      variant="outlined"
                       onClick={() => {
-                        setModalOpen(true);
-                        setCurrentContract(contract);
-                        setIsEditing(true);
+                        setSearchTerm("");
+                        fetchContracts(activeTab, 1);
                       }}
+                      sx={{ mt: 2 }}
                     >
-                      <FaEdit
-                        style={{ fontSize: "18px", marginRight: "8px" }}
-                      />
+                      Вернуться
                     </Button>
-                    <Button
-                      onClick={() =>
-                        deleteContract(
-                          contract.type === "organization"
-                            ? "organization"
-                            : "private",
-                          contract.id
-                        )
-                      }
-                    >
-                      <FaTrash
-                        style={{ fontSize: "18px", marginRight: "8px" }}
-                      />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : (
+              contracts.map((contract) => {
+                const expired =
+                  contract.type === "organization" &&
+                  isExpired(contract.endDate);
+                const hasZeroBalance =
+                  contract.type === "organization" &&
+                  Number(contract.amount) === 0;
+
+                return (
+                  <TableRow
+                    key={contract.id}
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: Colors.tableRowHover,
+                      },
+                      borderLeft:
+                        expired || hasZeroBalance
+                          ? "4px solid rgb(240, 70, 47)"
+                          : "none",
+                    }}
+                  >
+                    <TableCell>{contract.number}</TableCell>
+                    <TableCell>{contract.clientName}</TableCell>
+                    <TableCell>
+                      {contract.status ? "Активен" : "Не активен"}
+                    </TableCell>
+
+                    {contract.type === "organization" && (
+                      <>
+                        <TableCell>
+                          <Box display="flex" alignItems="center">
+                            {expired && <FaCircle style={circleStyles} />}
+                            {contract.endDate}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box display="flex" alignItems="center">
+                            {hasZeroBalance && (
+                              <FaCircle style={circleStyles} />
+                            )}
+                            {`${contract.amount} ₽`}
+                          </Box>
+                        </TableCell>
+                      </>
+                    )}
+
+                    <TableCell>
+                      <Button
+                        sx={{ mr: 2 }}
+                        onClick={() => {
+                          setModalOpen(true);
+                          setCurrentContract(contract);
+                          setIsEditing(true);
+                        }}
+                      >
+                        <FaEdit
+                          style={{ fontSize: "18px", marginRight: "8px" }}
+                        />
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          deleteContract(
+                            contract.type === "organization"
+                              ? "organization"
+                              : "private",
+                            contract.id
+                          )
+                        }
+                      >
+                        <FaTrash
+                          style={{ fontSize: "18px", marginRight: "8px" }}
+                        />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -304,17 +332,17 @@ const ContractsPage: React.FC = () => {
         initialData={currentContract}
         onUpdateContract={updateContractInList}
       />
-      {(offset + limit <= totalCount || totalCount <= limit) && (
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
-          <Button
-            variant="outlined"
-            onClick={loadMoreContracts}
-            disabled={loading}
-          >
-            Загрузить еще
-          </Button>
-        </Box>
-      )}
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
+        <Pagination
+          color="primary"
+          count={Math.ceil(totalCount / limit)}
+          page={page}
+          onChange={(event, value) => {
+            setPage(value);
+            fetchContracts(activeTab, value);
+          }}
+        />
+      </Box>
     </Box>
   );
 };
