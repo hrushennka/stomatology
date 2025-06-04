@@ -37,8 +37,8 @@ const SearchField: React.FC<SearchFieldProps> = ({
           }}
         />
       )}
-      <IconButton onClick={() => setShowSearch(!showSearch)} sx={{ ml: 1 }}>
-        <FaSearch style={{ fontSize: "18px" }} />
+      <IconButton onClick={() => setShowSearch(!showSearch)}>
+        <FaSearch style={{ fontSize: "16px" }} />
       </IconButton>
     </div>
   );

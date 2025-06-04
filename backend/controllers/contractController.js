@@ -42,8 +42,10 @@ const deleteOrgContract = async (req, res) => {
 
 const getPrivateContracts = async (req, res) => {
   const limit = parseInt(req.query.limit) || 3;
-  const offset = parseInt(req.query.offset) || 0;
+  const page = parseInt(req.query.page) || 1;
   const search = req.query.search || "";
+  const totalCount = await ContractModel.count();
+
   try {
     const whereClient = {
       [Op.or]: [
@@ -64,6 +66,9 @@ const getPrivateContracts = async (req, res) => {
         },
       ],
     };
+
+    const offset = (page - 1) * limit;
+
     const privateContracts = await ContractModel.findAll({
       limit,
       offset,
@@ -82,7 +87,7 @@ const getPrivateContracts = async (req, res) => {
       attributes: ["contractid", "contractnumber", "contractstatus"],
     });
     const formattedContracts = formatPrivateContracts(privateContracts);
-    res.json(formattedContracts);
+    res.json({ totalCount, contracts: formattedContracts });
   } catch (error) {
     console.error("Ошибка получения частных контрактов:", error);
     res.status(500).json({ error: "Не удалось получить частные контракты" });
@@ -90,8 +95,10 @@ const getPrivateContracts = async (req, res) => {
 };
 const getOrgContracts = async (req, res) => {
   const limit = parseInt(req.query.limit) || 3;
-  const offset = parseInt(req.query.offset) || 0;
+  const page = parseInt(req.query.page) || 0;
   const search = req.query.search || "";
+  const totalCount = await OrgContractModel.count();
+
   try {
     await sequelize.query("SELECT update_org_contract_status();");
     const whereOrganization = {
@@ -103,6 +110,9 @@ const getOrgContracts = async (req, res) => {
         },
       ],
     };
+
+    const offset = (page - 1) * limit;
+
     const orgContracts = await OrgContractModel.findAll({
       limit,
       offset,
@@ -124,7 +134,7 @@ const getOrgContracts = async (req, res) => {
       ],
     });
     const formattedContracts = formatOrgContracts(orgContracts);
-    res.json(formattedContracts);
+    res.json({ totalCount, contracts: formattedContracts });
   } catch (error) {
     console.error("Ошибка получения организационных контрактов:", error);
     res
@@ -156,14 +166,59 @@ const formatOrgContracts = (orgContracts) => {
       endDate: orgContract.orgcontractenddate,
       amount: orgContract.orgcontractamount,
       status: orgContract.orgcontractstatus,
-      organizationName: organization.organizationname || "",
+      clientName: organization.organizationname || "",
       type: "organization",
     };
   });
 };
+const updateContract = async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+
+  const { type, number, startDate, endDate, amount, status } = req.body;
+  try {
+    let updated;
+    if (!type) {
+      updated = await ContractModel.update(
+        {
+          contractstatus: status,
+          contractnumber: number,
+        },
+        {
+          where: { contractid: id },
+        }
+      );
+    } else if (type) {
+      console.log(id);
+      updated = await OrgContractModel.update(
+        {
+          orgcontractamount: amount,
+          orgcontractstartdate: startDate,
+          orgcontractenddate: endDate,
+          orgcontractstatus: status,
+          orgcontractnumber: number,
+        },
+        {
+          where: { orgcontractid: id },
+        }
+      );
+    } else {
+      return res.status(400).json({ message: "Неверный тип контракта" });
+    }
+    return res.status(200).json({
+      message: `${
+        type === false ? "Частный" : "Организационный"
+      } контракт обновлён`,
+    });
+  } catch (error) {
+    console.error("Ошибка при обновлении контракта:", error);
+    return res.status(500).json({ message: "Ошибка при обновлении контракта" });
+  }
+};
+
 export {
   getPrivateContracts,
   getOrgContracts,
   deletePrivateContract,
   deleteOrgContract,
+  updateContract,
 };

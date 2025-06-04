@@ -40,7 +40,13 @@ const App = () => {
 
 const MainPage = () => {
   return (
-    <Container maxWidth="sm" sx={{ textAlign: "center", marginTop: 4 }}>
+    <Container
+      sx={{
+        textAlign: "center",
+        marginTop: 4,
+        width: "400px",
+      }}
+    >
       <Typography variant="h4" gutterBottom>
         Главная страница
       </Typography>
@@ -68,12 +74,6 @@ const MainPage = () => {
             <LinkStyled to="/contracts">Список договоров</LinkStyled>
           </ListItem>
         </List>
-
-        <Box mt={2}>
-          <Link to="/login" style={{ textDecoration: "none" }}>
-            <Button variant="contained">Выйти из системы</Button>
-          </Link>
-        </Box>
       </Box>
     </Container>
   );
