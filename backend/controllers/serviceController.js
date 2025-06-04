@@ -5,13 +5,10 @@ import {
   DoctorModel,
   PatientModel
 } from "../config/models.js";
-import sequelize from "../config/db.js";
-import { Op } from "sequelize";
 
 export const getVisitDetails = async (req, res) => {
   try {
     const { visitId } = req.params;
-    console.log(`Получение визита ID: ${visitId}`);
     const visit = await VisitModel.findByPk(visitId, {
       include: [
         {
@@ -27,12 +24,8 @@ export const getVisitDetails = async (req, res) => {
       ]
     });
     
-    if (!visit) {
-      return res.status(404).json({ message: "Запись не найдена" });
-    }
-    
     const response = {
-      visitid: visit.visitid,
+      visitid: visitId,
       visitdate: visit.visitdate,
       visittime: visit.visittime,
       visitcomment: visit.visitcomment,
@@ -48,7 +41,6 @@ export const getVisitDetails = async (req, res) => {
     
     res.json(response);
   } catch (error) {
-    console.error('Ошибка при получении визита:', error);
     res.status(500).json({ message: "Ошибка сервера при получении информации о визите" });
   }
 };
@@ -78,14 +70,6 @@ export const getServicesByVisit = async (req, res) => {
 export const addServiceToVisit = async (req, res) => {
     try {
         const { visitId, serviceId } = req.body;
-        
-        const existing = await ProvidedServiceModel.findOne({
-            where: { visitid: visitId, serviceid: serviceId }
-        });
-        
-        if (existing) {
-            return res.status(400).json({ message: "Услуга уже добавлена к этому визиту" });
-        }
         
         const newProvidedService = await ProvidedServiceModel.create({
             visitid: visitId,

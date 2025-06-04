@@ -56,7 +56,7 @@ const MainPage = () => {
       >
         <List sx={{ padding: 0 }}>
           <ListItem>
-            <LinkStyled to="/services/1/">Список оказанных услуг</LinkStyled>
+            <LinkStyled to="/services/7/">Список оказанных услуг</LinkStyled>
           </ListItem>
           <ListItem>
             <LinkStyled to="/appointments">Список записей</LinkStyled>
