@@ -10,7 +10,6 @@ import {
   TableHead,
   TableRow,
   CircularProgress,
-  Chip,
   Collapse,
   IconButton,
   Alert,
@@ -205,13 +204,6 @@ const PaymentsPage: React.FC = () => {
                         {visit.TotalAmount} ₽
                       </Typography>
                     </TableCell>
-                    {/* <TableCell>
-                      <Chip
-                        label={visit.IsPaid ? "Оплачено" : "Не оплачено"}
-                        color={visit.IsPaid ? "success" : "warning"}
-                        size="small"
-                      />
-                    </TableCell> */}
                     <TableCell>
                       <Button
                         variant="contained"
