@@ -208,23 +208,35 @@ const VisitListPage: React.FC = () => {
                 <TableCell sx={headerCellStyles}>Пациент</TableCell>
               </TableRow>
             </TableHead>
-            <TableBody>
-              {filteredVisits.map((v) => (
-                <TableRow
-                  key={v.VisitID}
-                  sx={{
-                    "&:hover": {
-                      backgroundColor: Colors.tableRowHover,
-                    },
-                  }}
-                >
-                  <TableCell>{new Date(v.VisitDate).toLocaleDateString()}</TableCell>
-                  <TableCell>{v.VisitTime}</TableCell>
-                  <TableCell>{v.DoctorName}</TableCell>
-                  <TableCell>{v.PatientName}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+<TableBody>
+  {filteredVisits.map((v) => (
+    <TableRow
+      key={v.VisitID}
+      sx={{
+        "&:hover": {
+          backgroundColor: Colors.tableRowHover,
+        },
+      }}
+    >
+      <TableCell>{new Date(v.VisitDate).toLocaleDateString()}</TableCell>
+      <TableCell>{v.VisitTime}</TableCell>
+      <TableCell>{v.DoctorName}</TableCell>
+      <TableCell sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span>{v.PatientName}</span>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FaPlus />}
+          onClick={() => console.log(`Добавляем услуги для визита ${v.VisitID}`)}
+          sx={{ ml: 2 }}
+        >
+          Добавить услуги
+        </Button>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
           </Table>
         </TableContainer>
       )}
