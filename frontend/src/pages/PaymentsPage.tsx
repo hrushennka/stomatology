@@ -17,6 +17,8 @@ import {
   Paper,
   Tabs,
   Tab,
+  TextField,
+  TableSortLabel,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { Colors } from "../constants/Colors";
@@ -31,8 +33,6 @@ interface ProvidedService {
 }
 
 interface Visit {
-  // paidFromContract?: number;
-  // paidByClient?: number;
   VisitID: number;
   PatientName: string;
   VisitDate: string;
@@ -42,7 +42,7 @@ interface Visit {
   OrgContractAmount: number | null;
   OrgContractID: number | null;
   OrganizationID: number | null;
-  OrganizationName: string | null; 
+  OrganizationName: string | null;
   IsPaid: boolean;
   tblpatient: {
     patientfirstname: string;
@@ -74,6 +74,8 @@ const PaymentsPage: React.FC = () => {
   const [offset, setOffset] = useState(0);
   const [limit] = useState(10);
   const [activeTab, setActiveTab] = useState<"paid" | "unpaid">("unpaid");
+  const [patientFilter, setPatientFilter] = useState("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -147,9 +149,14 @@ const PaymentsPage: React.FC = () => {
     navigate(-1);
   };
 
-  const filteredVisits = visits.filter(v =>
-    activeTab === "paid" ? v.IsPaid : !v.IsPaid
-  );
+  const filteredVisits = visits
+    .filter(v => activeTab === "paid" ? v.IsPaid : !v.IsPaid)
+    .filter(v => v.PatientName.toLowerCase().includes(patientFilter.toLowerCase()))
+    .sort((a, b) => {
+      const dateA = new Date(`${a.VisitDate}T${a.VisitTime}`);
+      const dateB = new Date(`${b.VisitDate}T${b.VisitTime}`);
+      return sortDirection === "asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+    });
 
   if (loading && visits.length === 0) {
     return (
@@ -180,6 +187,14 @@ const PaymentsPage: React.FC = () => {
         <Tab label="Оплаченные" value="paid" />
       </Tabs>
 
+      <Box display="flex" gap={2} mb={2}>
+        <TextField
+          label="Фильтр по пациенту"
+          value={patientFilter}
+          onChange={(e) => setPatientFilter(e.target.value)}
+        />
+      </Box>
+
       <Snackbar
         open={!!message}
         autoHideDuration={6000}
@@ -196,7 +211,21 @@ const PaymentsPage: React.FC = () => {
           <TableHead sx={{ backgroundColor: Colors.tableHeader }}>
             <TableRow>
               <TableCell sx={headerCellStyles}>Пациент</TableCell>
-              <TableCell sx={headerCellStyles}>Дата и время</TableCell>
+              <TableCell sx={headerCellStyles}>
+                <TableSortLabel
+                  active
+                  direction={sortDirection}
+                  onClick={() => setSortDirection(prev => prev === "asc" ? "desc" : "asc")}
+                  sx={{
+                    color: 'white !important',
+                    '& .MuiTableSortLabel-icon': { color: 'white !important' },
+                    '&.Mui-active': { color: 'white !important' },
+                    '&:hover': { color: 'white !important' },
+                  }}
+                >
+                  Дата и время
+                </TableSortLabel>
+              </TableCell>
               <TableCell sx={headerCellStyles}>Тип договора</TableCell>
               <TableCell sx={headerCellStyles}>Сумма</TableCell>
               <TableCell sx={headerCellStyles}>Действия</TableCell>
@@ -237,7 +266,6 @@ const PaymentsPage: React.FC = () => {
                         visit.ContractType
                       )}
                     </TableCell>
-
                     <TableCell>
                       <Typography fontWeight={600} color={visit.IsPaid ? "success.main" : "text.primary"}>
                         {visit.TotalAmount} ₽
@@ -291,7 +319,7 @@ const PaymentsPage: React.FC = () => {
                                   <TableCell align="right">{service.servicecost.toFixed(2)} ₽</TableCell>
                                 </TableRow>
                               ))}
-                             <TableRow>
+                              <TableRow>
                                 <TableCell colSpan={1} sx={{ fontWeight: 600 }}>
                                   Итого:
                                 </TableCell>
