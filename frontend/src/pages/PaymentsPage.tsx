@@ -10,12 +10,13 @@ import {
   TableHead,
   TableRow,
   CircularProgress,
-  Chip,
   Collapse,
   IconButton,
   Alert,
   Snackbar,
   Paper,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { Colors } from "../constants/Colors";
@@ -30,6 +31,8 @@ interface ProvidedService {
 }
 
 interface Visit {
+  // paidFromContract?: number;
+  // paidByClient?: number;
   VisitID: number;
   PatientName: string;
   VisitDate: string;
@@ -39,6 +42,7 @@ interface Visit {
   OrgContractAmount: number | null;
   OrgContractID: number | null;
   OrganizationID: number | null;
+  OrganizationName: string | null; 
   IsPaid: boolean;
   tblpatient: {
     patientfirstname: string;
@@ -69,6 +73,7 @@ const PaymentsPage: React.FC = () => {
   const [expandedVisitId, setExpandedVisitId] = useState<number | null>(null);
   const [offset, setOffset] = useState(0);
   const [limit] = useState(10);
+  const [activeTab, setActiveTab] = useState<"paid" | "unpaid">("unpaid");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -79,18 +84,21 @@ const PaymentsPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get<Visit[]>("/payment/list", {
-        params: { limit, offset }
+        params: { limit, offset },
       });
-      
+
       const visitsWithServices = response.data.map(visit => ({
         ...visit,
         Services: visit.tblprovidedservices?.map((ps: ProvidedService) => ({
           servicename: ps.tblservice.servicename,
-          servicecost: parseFloat(ps.tblservice.servicecost)
-        }))
+          servicecost: parseFloat(ps.tblservice.servicecost),
+        })),
+        OrganizationName: visit.OrganizationName || null
       }));
-      
-      setVisits(prev => offset === 0 ? visitsWithServices : [...prev, ...visitsWithServices]);
+
+      setVisits(prev =>
+        offset === 0 ? visitsWithServices : [...prev, ...visitsWithServices]
+      );
     } catch (error: any) {
       console.error("Error fetching visits:", error);
       setMessage(error.response?.data?.error || "Ошибка при загрузке данных");
@@ -106,13 +114,18 @@ const PaymentsPage: React.FC = () => {
       const response = await api.post<ApiResponse>(`/payment/pay/${visitId}`);
       setMessage(response.data.message);
       setMessageType("success");
-      
-      setVisits(prevVisits => 
-        prevVisits.map(visit => 
-          visit.VisitID === visitId ? { ...visit, IsPaid: true } : visit
+
+      setVisits(prevVisits =>
+        prevVisits.map(visit =>
+          visit.VisitID === visitId
+            ? {
+                ...visit,
+                IsPaid: true,
+              }
+            : visit
         )
       );
-      
+
       setTimeout(() => {
         setOffset(0);
         fetchVisits();
@@ -134,6 +147,9 @@ const PaymentsPage: React.FC = () => {
     navigate(-1);
   };
 
+  const filteredVisits = visits.filter(v =>
+    activeTab === "paid" ? v.IsPaid : !v.IsPaid
+  );
 
   if (loading && visits.length === 0) {
     return (
@@ -152,13 +168,25 @@ const PaymentsPage: React.FC = () => {
         </Button>
       </Box>
 
+      <Tabs
+        value={activeTab}
+        onChange={(_, newValue) => {
+          setActiveTab(newValue);
+          setOffset(0);
+        }}
+        sx={{ mb: 2 }}
+      >
+        <Tab label="Неоплаченные" value="unpaid" />
+        <Tab label="Оплаченные" value="paid" />
+      </Tabs>
+
       <Snackbar
         open={!!message}
         autoHideDuration={6000}
         onClose={() => setMessage(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert onClose={() => setMessage(null)} severity={messageType} sx={{ width: '100%' }}>
+        <Alert onClose={() => setMessage(null)} severity={messageType} sx={{ width: "100%" }}>
           {message}
         </Alert>
       </Snackbar>
@@ -176,7 +204,7 @@ const PaymentsPage: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {visits.length === 0 ? (
+            {filteredVisits.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">
                   <Typography variant="body1" color="textSecondary" sx={{ py: 4 }}>
@@ -185,33 +213,36 @@ const PaymentsPage: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              visits.map((visit) => (
+              filteredVisits.map((visit) => (
                 <React.Fragment key={visit.VisitID}>
                   <TableRow
                     sx={{
-                      "&:hover": {
-                        backgroundColor: Colors.tableRowHover,
-                      },
+                      "&:hover": { backgroundColor: Colors.tableRowHover },
                       borderLeft: visit.IsPaid ? "4px solid #4caf50" : "4px solid rgb(240, 70, 47)",
                     }}
                   >
                     <TableCell>{visit.PatientName}</TableCell>
                     <TableCell>
-                      {new Date(visit.VisitDate).toLocaleDateString()} {visit.VisitTime}
+                      {new Date(visit.VisitDate).toLocaleDateString()} {visit.VisitTime.slice(0, 5)}
                     </TableCell>
-                    <TableCell>{visit.ContractType}</TableCell>
+                    <TableCell>
+                      {visit.ContractType === "организация" ? (
+                        <>
+                          организация<br />
+                          <Typography variant="body2">
+                            {visit.OrganizationName || "—"}
+                          </Typography>
+                        </>
+                      ) : (
+                        visit.ContractType
+                      )}
+                    </TableCell>
+
                     <TableCell>
                       <Typography fontWeight={600} color={visit.IsPaid ? "success.main" : "text.primary"}>
                         {visit.TotalAmount} ₽
                       </Typography>
                     </TableCell>
-                    {/* <TableCell>
-                      <Chip
-                        label={visit.IsPaid ? "Оплачено" : "Не оплачено"}
-                        color={visit.IsPaid ? "success" : "warning"}
-                        size="small"
-                      />
-                    </TableCell> */}
                     <TableCell>
                       <Button
                         variant="contained"
@@ -260,21 +291,22 @@ const PaymentsPage: React.FC = () => {
                                   <TableCell align="right">{service.servicecost.toFixed(2)} ₽</TableCell>
                                 </TableRow>
                               ))}
-                              <TableRow>
+                             <TableRow>
                                 <TableCell colSpan={1} sx={{ fontWeight: 600 }}>
                                   Итого:
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: "success.main" }}>
+                                <TableCell
+                                  align="right"
+                                  sx={{
+                                    fontWeight: 600,
+                                    color: visit.IsPaid ? "success.main" : "error.main",
+                                  }}
+                                >
                                   {visit.TotalAmount} ₽
                                 </TableCell>
                               </TableRow>
                             </TableBody>
                           </Table>
-                          {visit.ContractType === 'организация' && visit.OrgContractAmount !== null && (
-                            <Typography variant="body2" sx={{ mt: 2 }}>
-                              Сумма по договору организации: <strong>{visit.OrgContractAmount} ₽</strong>
-                            </Typography>
-                          )}
                         </Box>
                       </Collapse>
                     </TableCell>
