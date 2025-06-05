@@ -5,10 +5,10 @@ import {
   ServiceModel as tblservice, 
   EmployeeModel as tblemployee, 
   OrgContractModel as tblorgcontract, 
-  PaymentModel as tblpayment 
+  PaymentModel as tblpayment,
+  OrganizationModel as tblorganization 
 } from "../config/models.js";
 
-// import { Op } from 'sequelize';
 
 const getPaymentsList = async (req, res) => {
   try {
@@ -55,7 +55,11 @@ const getPaymentsList = async (req, res) => {
         );
 
         const employee = await tblemployee.findOne({
-          where: { patientid: patient.patientid } 
+          where: { patientid: patient.patientid },
+          include: [{ 
+            model: tblorganization,
+            attributes: ['organizationname'] 
+          }]
         });
 
         const contractType = employee ? 'организация' : 'частный';
@@ -67,7 +71,6 @@ const getPaymentsList = async (req, res) => {
           });
         }
         
-        // Проверяем, есть ли платеж для этого визита
         const isPaid = visit.payments && visit.payments.length > 0;
 
         return {
@@ -80,7 +83,8 @@ const getPaymentsList = async (req, res) => {
           OrgContractAmount: orgContract ? parseFloat(orgContract.orgcontractamount) : null, 
           OrgContractID: orgContract ? orgContract.orgcontractid : null, 
           OrganizationID: employee ? employee.organizationid : null, 
-          IsPaid: isPaid, // статус оплаты
+          OrganizationName: employee?.tblorganization?.organizationname || null, 
+          IsPaid: isPaid, 
           tblprovidedservices: visit.tblprovidedservices
         };
       })
@@ -153,42 +157,46 @@ const payVisit = async (req, res) => {
         amountLeftToPay = totalAmount - remainingAmount;
       }
 
-      // Обновляем сумму договора
       await orgContract.update({ 
         orgcontractamount: remainingAmount - amountFromContract 
       });
 
-      // Создаем запись о платеже
       await tblpayment.create({
         visitid: VisitID,
         paymenttotalamount: totalAmount,
       });
 
-      if (amountLeftToPay > 0) {
-        return res.json({
-          message: `Оплачено ${amountFromContract.toFixed(2)} с договора организации. Осталось доплатить ${amountLeftToPay.toFixed(2)}`,
-          paidAmount: totalAmount,
-          isPaid: true,
-        });
-      } else {
-        return res.json({ 
-          message: 'Оплата прошла успешно', 
-          paidAmount: totalAmount,
-          isPaid: true
-        });
-      }
+     if (amountLeftToPay > 0) {
+  return res.json({
+    message: `Оплачено ${amountFromContract.toFixed(2)} с договора организации. Осталось доплатить ${amountLeftToPay.toFixed(2)}`,
+    paidAmount: totalAmount,
+    paidFromContract: amountFromContract,
+    paidByClient: amountLeftToPay,
+    isPaid: true,
+  });
+} else {
+  return res.json({ 
+    message: 'Оплата прошла успешно', 
+    paidAmount: totalAmount,
+    paidFromContract: totalAmount,
+    paidByClient: 0,
+    isPaid: true
+  });
+}
+
     } else {
-      // Для частных пациентов просто создаем запись о платеже
       await tblpayment.create({
         visitid: VisitID,
         paymenttotalamount: totalAmount,
       });
 
       return res.json({ 
-        message: 'Оплата прошла успешно', 
-        paidAmount: totalAmount,
-        isPaid: true
-      });
+  message: 'Оплата прошла успешно', 
+  paidAmount: totalAmount,
+  paidFromContract: 0,
+  paidByClient: totalAmount,
+  isPaid: true
+});
     }
   } catch (err) {
     console.error('Error in payVisit:', err);
