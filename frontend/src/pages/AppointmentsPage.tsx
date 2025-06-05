@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -22,12 +23,14 @@ import {
   Select,
   MenuItem,
   Snackbar,
-  Alert,
+  Alert
 } from "@mui/material";
 import { FaPlus } from "react-icons/fa";
 import type { SelectChangeEvent } from "@mui/material";
 import api from "../scripts/api";
 import { Colors } from "../constants/Colors";
+
+
 
 interface Visit {
   VisitID: number;
@@ -40,6 +43,10 @@ interface Visit {
 const headerCellStyles = {
   fontWeight: 700,
   color: "white",
+};
+
+const formatTime = (timeString: string) => {
+  return timeString.split(':').slice(0, 2).join(':');
 };
 
 const VisitListPage: React.FC = () => {
@@ -140,6 +147,8 @@ const VisitListPage: React.FC = () => {
     setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
   };
 
+  const navigate = useNavigate();
+
   return (
     <Box sx={{ padding: 2 }}>
       <Box display="flex" justifyContent="space-between" mb={2}>
@@ -219,7 +228,7 @@ const VisitListPage: React.FC = () => {
       }}
     >
       <TableCell>{new Date(v.VisitDate).toLocaleDateString()}</TableCell>
-      <TableCell>{v.VisitTime}</TableCell>
+      <TableCell>{formatTime(v.VisitTime)}</TableCell>
       <TableCell>{v.DoctorName}</TableCell>
       <TableCell sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span>{v.PatientName}</span>
@@ -227,7 +236,7 @@ const VisitListPage: React.FC = () => {
           variant="outlined"
           size="small"
           startIcon={<FaPlus />}
-          onClick={() => console.log(`Добавляем услуги для визита ${v.VisitID}`)}
+          onClick={() => navigate(`/services/${v.VisitID}`)}
           sx={{ ml: 2 }}
         >
           Добавить услуги
