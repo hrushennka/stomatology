@@ -13,6 +13,7 @@ import {
   TableRow,
   Pagination,
   CircularProgress,
+  Snackbar,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import AddContractModal from "../components/ContractModal";
@@ -57,6 +58,8 @@ const ContractsPage: React.FC = () => {
   const [currentContract, setCurrentContract] = useState<Contract | null>(null);
   const [isEditing, setIsEditing] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
 
   const fetchContracts = async (
     type: "organization" | "private",
@@ -95,6 +98,8 @@ const ContractsPage: React.FC = () => {
         setContracts(
           contracts.filter((contract) => contract.id !== contractId)
         );
+        setMessage("Договор успешно удален");
+        setOpen(true);
       } catch (error) {
         console.error("Ошибка при удалении контракта:", error);
       }
@@ -111,14 +116,36 @@ const ContractsPage: React.FC = () => {
     return <CircularProgress />;
   }
 
-  const updateContractInList = (updatedContract: any) => {
-    console.log(updatedContract);
+  const determineContractStatus = (amount: number, endDate: string) => {
+    const isZeroOrExpired = Number(amount) <= 0 || isExpired(endDate);
 
+    return isZeroOrExpired ? false : true;
+  };
+
+  const updateContractInList = (updatedContract: any) => {
+    console.log(updatedContract.type);
+
+    const newStatus = determineContractStatus(
+      updatedContract.amount,
+      updatedContract.endDate
+    );
+
+    console.log(newStatus, updatedContract.type);
     setContracts((prev) =>
       prev.map((contract) =>
-        contract.id === updatedContract.id ? updatedContract : contract
+        contract.id === updatedContract.id
+          ? {
+              ...updatedContract,
+              ...(updatedContract.type == "organization"
+                ? { status: newStatus }
+                : {}),
+            }
+          : contract
       )
     );
+
+    setMessage("Договор успешно отредактирован");
+    setOpen(true);
   };
 
   const handleBackButtonClick = () => {
@@ -150,6 +177,10 @@ const ContractsPage: React.FC = () => {
       month: "2-digit",
       year: "numeric",
     });
+  };
+
+  const handleClose = () => {
+    setOpen(false);
   };
 
   return (
@@ -326,7 +357,14 @@ const ContractsPage: React.FC = () => {
           </TableBody>
         </Table>
       </TableContainer>
-
+      <div>
+        <Snackbar
+          open={open}
+          autoHideDuration={3000}
+          onClose={handleClose}
+          message={message}
+        />
+      </div>
       <AddContractModal
         open={modalOpen}
         handleClose={() => setModalOpen(false)}
