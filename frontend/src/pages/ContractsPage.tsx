@@ -143,6 +143,15 @@ const ContractsPage: React.FC = () => {
     return expirationDate < currentDate;
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
   return (
     <Box sx={{ padding: 2 }}>
       <Box display="flex" justifyContent="space-between" mb={2}>
@@ -268,7 +277,7 @@ const ContractsPage: React.FC = () => {
                         <TableCell>
                           <Box display="flex" alignItems="center">
                             {expired && <FaCircle style={circleStyles} />}
-                            {contract.endDate}
+                            {formatDate(contract.endDate)}
                           </Box>
                         </TableCell>
                         <TableCell>
