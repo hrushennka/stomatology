@@ -159,7 +159,7 @@ const ContractsPage: React.FC = () => {
             Добавить контракт
           </Button> */}
           <Button variant="contained" onClick={handleBackButtonClick}>
-            <FaArrowLeft /> Назад
+            <FaArrowLeft style={{ paddingRight: "10px" }} /> Назад
           </Button>
         </Box>
       </Box>
@@ -219,16 +219,9 @@ const ContractsPage: React.FC = () => {
           <TableBody>
             {contracts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">
-                  <Box
-                    display="flex"
-                    flexDirection="column"
-                    alignItems="center"
-                    p={1}
-                  >
-                    <Typography variant="body1" gutterBottom>
-                      Ничего не найдено
-                    </Typography>
+                <TableCell colSpan={6} align="center" sx={{}}>
+                  <Box textAlign="center">
+                    <Typography>Ничего не найдено</Typography>
                     <Button
                       variant="outlined"
                       onClick={() => {
