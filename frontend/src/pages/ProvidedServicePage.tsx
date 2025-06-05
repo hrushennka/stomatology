@@ -4,6 +4,7 @@ import { Table, Button, Modal, Select, Card, Descriptions, Tag} from 'antd';
 import type { SelectProps } from 'antd';
 import api from "../scripts/api";
 import { FileTextOutlined } from '@ant-design/icons';
+import { useNavigate } from "react-router-dom";
 // import styled from "styled-components";
 // import { Colors } from "../constants/Colors";
 
@@ -57,7 +58,7 @@ const formatCurrency = (value: string) => {
   return parseFloat(value).toLocaleString('ru-RU', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }) + ' руб.';
+  }) + ' ₽';
 };
 
 const ProvidedServicePage: React.FC = () => {
@@ -173,6 +174,8 @@ const ProvidedServicePage: React.FC = () => {
     0
   );
 
+  const navigate = useNavigate();
+
   if (loading.visit || loading.services || loading.providedServices) {
     return <div>Загрузка...</div>;
   }
@@ -183,6 +186,12 @@ const ProvidedServicePage: React.FC = () => {
 
   return (
     <div style={{ padding: '24px', margin: '10px 60px'}}>
+      <Button
+        style={{ margin: '10px 0px'}}
+        size="large"
+        onClick={() => navigate('/appointments')}>
+        Назад
+      </Button>
       {/* <Card title="Информация о записи" style={{ marginBottom: '24px' }}>
         <Descriptions bordered>
           <Descriptions.Item label="Пациент">{visit.patient.fullName}</Descriptions.Item>
