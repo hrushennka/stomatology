@@ -1,54 +1,38 @@
-# React + TypeScript + Vite
+Проект для автоматизации работы стоматологической клиники. 
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+##  Основные функции
 
-Currently, two official plugins are available:
+### **Управление договорами**
+- Список договоров с поиском и фильтрацией
+- Отслеживание статусов договоров и сроков действия
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### **Записи пациентов**
+- Расписание визитов с фильтрацией по врачам и пациентам
+- Создание и управление записями на приём
 
-## Expanding the ESLint configuration
+### **Медицинские услуги**
+- Назначение услуг к визитам пациентов
+- Автоматический расчёт стоимости лечения
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### **Финансовый учёт**
+- Система приёма платежей за визиты
+- Отслеживание статусов оплаты
+- Детализация оказанных услуг и сумм к оплате
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## Запуск проекта
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+```bash
+# 1. Установите зависимости
+npm i
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+# 2. Настройте подключение к PostgreSQL, убедитесь в наличии .env файлов
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+# 3. Из папки /backend:
+npm start
+
+# 4. В другом терминале из папки /frontend:
+npm run dev
+
+# 5. Откройте в браузере:
+#    http://localhost:(порт)
+
